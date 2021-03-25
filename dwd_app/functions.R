@@ -16,13 +16,13 @@ get_DWD_stat_info <- function(){
                                sapply(stations$Stations_id,
                                       function(s) paste0(paste0(rep("0", 6 - ceiling(log10(s + 0.5))),
                                                                 collapse = ""), s)), perl = TRUE)
-  # historical data only gies up to the end of 2019
+  # historical data only goes up to the end of 2019
   stations$bis_datum[stations$bis_datum > ymd(20191231)] <- ymd(20191231)
-  
+
   return(stations)
 }
 
-## function to get DWD data (historic) for a sertain station
+## function to get DWD data (historic) for a certain station
 get_DWD_data_hist <- function(stat_meta) {
   # url to the meteo file
   url_stat_dat <- paste0("https://opendata.dwd.de/climate_environment/CDC/",
@@ -30,7 +30,7 @@ get_DWD_data_hist <- function(stat_meta) {
                          "tageswerte_KL_", stat_meta$Stations_id, "_",
                          format(stat_meta$von_datum, "%Y%m%d"), "_",
                          format(stat_meta$bis_datum, "%Y%m%d"), "_hist.zip")
-  
+
   # download and read in the data from the zip file
   temp <- tempfile()
   tryCatch(download.file(url_stat_dat, temp),
@@ -43,28 +43,28 @@ get_DWD_data_hist <- function(stat_meta) {
                         sep = ";", header = TRUE, fileEncoding = "iso-8859-1", na.strings = -999)
   # change format of date
   dat_met$MESS_DATUM <- ymd(dat_met$MESS_DATUM)
-  
+
   # meta data for the parameters
   meta_name <- paste0("Metadaten_Parameter_klima_tag_", stat_meta$Stations_id, ".txt")
-  
+
   meta_dat <- read.table(unz(temp, meta_name), sep = ";", header = TRUE,
                          nrow = length(readLines(unz(temp, meta_name))) - 3,
                          fileEncoding = "iso-8859-1")
   # change format of date
   meta_dat$Von_Datum <- ymd(meta_dat$Von_Datum)
   meta_dat$Bis_Datum <- ymd(meta_dat$Bis_Datum)
-  
+
   # meta data for the location
   geo_name <- paste0("Metadaten_Geographie_", stat_meta$Stations_id, ".txt")
-  
+
   geo_meta <- read.table(unz(temp, geo_name), sep = ";", header = TRUE,
                          fileEncoding = "iso-8859-1")
   # change format of date
   geo_meta$von_datum <- ymd(geo_meta$von_datum)
   geo_meta$bis_datum <- ymd(geo_meta$bis_datum)
-  
+
   unlink(temp)
-  
+
   # remove NAs
   for(c in colnames(dat_met)) {
     if(!c %in% c("STATIONS_ID", "MESS_DATUM", "eor")) {
@@ -81,18 +81,18 @@ get_DWD_data_hist <- function(stat_meta) {
 
 ## funciton to calculate annual average values for a data.frame
 an_mean <- function(data, min_c_year = 333){
-  
+
   an_dat <- aggregate(data, by = list(year = year(data$t)), mean, na.rm = TRUE)
   # count the number of obervations in the year
   an_dat$count <- aggregate(data$var, by = list(year = year(data$t)), function(x)sum(!is.na(x)))$x
-  
+
   # remove years with less than a given number of data
   an_dat$var[an_dat$count < min_c_year] <- NA
   an_ts <- xts(x = an_dat$var, order.by = an_dat$t)
-  
+
   # plot data
   p <- ggplot(an_dat) + geom_point(aes(x = t, y = var))
-  
+
   return(list(data = an_dat,
               ts = an_ts,
               plot = p))
@@ -101,24 +101,24 @@ an_mean <- function(data, min_c_year = 333){
 
 ## funciton to calculate monthly average values for a data.frame
 mon_mean <- function(data, min_c_mon = 15) {
-  
+
   mon_dat <- aggregate(data, by = list(year = year(data$t),
                                        month = month(data$t)), mean, na.rm = TRUE)
   mon_dat$count <- aggregate(data$var, by = list(year = year(data$t),
                                                  month = month(data$t)), function(x)sum(!is.na(x)))$x
-  
+
   # remove years with less than a given number of data
   mon_dat$var[mon_dat$count < min_c_mon] <- NA
-  
+
   mon_ts <- xts(x = mon_dat$var, order.by = mon_dat$t)
-  
+
   p <- list()
   for (m in 1:12) {
     mon_sub <- subset(mon_dat, mon_dat$month == m)
     p[[m]] <- ggplot(mon_sub) + geom_point(aes(x = t, y = var))
-    
+
   }
-  
+
   return(list(data = mon_dat,
               ts = mon_ts,
               plot = p))
@@ -127,11 +127,11 @@ mon_mean <- function(data, min_c_mon = 15) {
 
 ## funciton to calculate average day of the year values for a data.frame
 doy_av <- function(data, use_year = c(1960, 1970, 1980, 1990, 2000, 2010)){
-  
+
   dly_dat <- data
   dly_dat$year <- year(data$t)
   dly_dat$doy <- yday(data$t)
-  
+
   # calculate average year
   dly_mean <- aggregate(data.frame(var = dly_dat$var), list(doy = dly_dat$doy), mean, na.rm = TRUE)
   dly_mean$year <- "average"
@@ -139,8 +139,8 @@ doy_av <- function(data, use_year = c(1960, 1970, 1980, 1990, 2000, 2010)){
                            quantile, 0.05, na.rm = TRUE)$var
   dly_mean$q95 <- aggregate(data.frame(var = dly_dat$var), list(doy = dly_dat$doy),
                             quantile, 0.95, na.rm = TRUE)$var
-  
-  
+
+
   # select which years to plot
   dly_dat_s <- subset(dly_dat, dly_dat$year %in% use_year)
   dly_dat_s <- rbind(dly_dat_s[, 2:4], dly_mean[, 1:3])
@@ -148,9 +148,9 @@ doy_av <- function(data, use_year = c(1960, 1970, 1980, 1990, 2000, 2010)){
                                        col = "grey42", fill = "grey42") +
     geom_line(aes(x = doy, y = var, col = year)) +
     scale_color_manual(values = c(brewer.pal(length(use_year), "Dark2"), "black"))
-  
+
   return(list(data = dly_dat_s,
-              plot = p))  
+              plot = p))
 }
 
 ## funciton to calculate cumulative day of the year values for a data.frame
@@ -168,7 +168,7 @@ doy_cum <- function(data,   use_year = c(1970, 1980, 1990, 2000, 2010, 2018, 201
                       year = tmp_dat$year))})
   # melt list to long data frame
   dly_dat_c <- melt(dly_dat_c, id.vars = c("doy", "year", "var"))
-  
+
   # mean cumulative variable
   dly_c_mean <- aggregate(list(var = dly_dat_c$var), by = list(doy = dly_dat_c$doy),
                           mean, na.rm = TRUE)
@@ -177,9 +177,9 @@ doy_cum <- function(data,   use_year = c(1970, 1980, 1990, 2000, 2010, 2018, 201
                              quantile, 0.05, na.rm = TRUE)$var
   dly_c_mean$q95 <- aggregate(list(var = dly_dat_c$var), by = list(doy = dly_dat_c$doy),
                               quantile, 0.95, na.rm = TRUE)$var
-  
-  
-  
+
+
+
   dly_dat_s_c <- subset(dly_dat_c, dly_dat_c$year %in% use_year)
   dly_dat_s_c <- rbind(dly_dat_s_c[, 1:3], dly_c_mean[, 1:3])
   dly_dat_s_c <- dly_dat_s_c[dly_dat_s_c$doy < 366, ]
@@ -187,7 +187,7 @@ doy_cum <- function(data,   use_year = c(1970, 1980, 1990, 2000, 2010, 2018, 201
                                          col = "grey42", fill = "grey42") +
     geom_line(aes(x = doy, y = var, col = year)) +
     scale_color_manual(values = c(brewer.pal(length(use_year), "Dark2"), "black"))
-  
+
   return(list(data = dly_dat_s_c,
-              plot = p)) 
+              plot = p))
 }

@@ -26,7 +26,7 @@ server <- function(input, output) {
 
   #dwd_stations <- get_DWD_stat_info()
   load("dwd_stations.Rdata")
-  
+
   # create a reactive value that will store the click position
   data_of_click <- reactiveValues(clickedMarker=NULL)
 
@@ -44,21 +44,21 @@ server <- function(input, output) {
                                                      dwd_stations$geoBreite==data_of_click$clickedMarker$lat]
       }
   })
-  
+
   output$station <- renderUI(h1(my_place()))
-  
+
   # reactive function to get the data for the selected station
   get_dat <- reactive({
-    #get_DWD_data_hist(subset(dwd_stations, dwd_stations$Stationsname == my_place()))
-    load("test_data.Rdata")
-    return(test_d)
+    get_DWD_data_hist(subset(dwd_stations, dwd_stations$Stationsname == my_place()))
+    #load("test_data.Rdata")
+    #return(test_d)
   })
-  
+
   # data frame for calculations
   dat_calc <- reactive({
     data.frame(t = get_dat()$data$MESS_DATUM,
                var = get_dat()$data[, plt_var()])})
-  
+
   # variable which to use
   plt_var <- reactive({
   tag_plt <- unique(get_dat()$meta_per[,c('Parameter','Parameterbeschreibung')])
@@ -66,7 +66,7 @@ server <- function(input, output) {
                                               "TNK"), ]
   return(tag_plt$Parameter[input$plotvar==tag_plt$Parameterbeschreibung])
   })
-  
+
   # available variables
   av_var <- reactive({
     tag_plt <- unique(get_dat()$meta_per[,c('Parameter','Parameterbeschreibung')])
@@ -108,15 +108,15 @@ server <- function(input, output) {
   })
 
   output$plot <- renderDygraph({
-    
+
     tsx <- xts(get_dat()$data[, plt_var()], get_dat()$data$MESS_DATUM)
     dygraph(tsx, xlab = 'Datum', main = my_place(),
             ylab = input$plotvar) %>%
       dySeries("V1", label = input$plotvar) %>%
       dyLegend(show = "always", hideOnMouseOut = FALSE)
-    
+
   })
-  
+
   # plot warming stripes
   output$warming <- renderPlotly({
     an <- an_mean(data.frame(t = get_dat()$data$MESS_DATUM,
@@ -142,9 +142,9 @@ server <- function(input, output) {
     }
     ggplotly(p = pl)
   })
-  
+
   sumTable <-  reactive({
-    
+
     if(input$monthly == FALSE) {
       DF <- an_mean(dat_calc())$data
     } else {
@@ -167,10 +167,10 @@ server <- function(input, output) {
   output$sumTable <- renderTable({
         sumTable()
     }, digits = 4)
-  
+
 # plot of mean doy
   output$mean_doy <- renderPlotly({
-    
+
     if(input$cumsum) {
       p <- doy_cum(dat_calc(), use_year = unlist(input$year_plt))
     } else {
@@ -178,7 +178,7 @@ server <- function(input, output) {
     }
     ggplotly(p = p$plot + ylab(input$plotvar) + xlab("Jahr"))
   })
-  
+
   # years to select
   output$sel_year <- renderUI({
     selectizeInput("year_plt", "Welche Jahre vergleichen",
@@ -186,10 +186,10 @@ server <- function(input, output) {
                                           unique(year(dat_calc()$t))),
                    multiple = TRUE)
   })
-  
+
   # which variables are available
   output$plot_seclect <- renderUI({
-    
+
     selectInput(inputId = "plotvar", #name of input
                 label = "Welche Variable plotten?", #label displayed in ui
                 choices = av_var())
