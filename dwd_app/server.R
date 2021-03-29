@@ -89,7 +89,7 @@ server <- function(input, output) {
                  layerId = 3,
                  labelOptions(layerId=6, noHide = FALSE, direction = 'auto'),
                  options=markerOptions(riseOnHover=TRUE),
-                 group='Stationen')  %>%
+                 group='Marker')  %>%
 
       addCircles(lat = dwd_stations$geoBreite,
                  lng = dwd_stations$geoLaenge,
@@ -97,14 +97,18 @@ server <- function(input, output) {
                                "</br>ID:",
                                dwd_stations$Stations_id,
                                "\n </br>Höhe:",
-                               dwd_stations$Stationshoehe),
+                               dwd_stations$Stationshoehe, "m über NHN",
+                               "\n </br>Daten von:",
+                               dwd_stations$von_datum,
+                               "\n </br>bis:",
+                               dwd_stations$bis_datum),
                  layerId = 2, weight = 7,color='red',
                  opacity = 0.7, group='Stationen')  %>%
 
           addLayersControl(
             baseGroups = c('Landscape','Topography'),position = 'bottomright',
             options = layersControlOptions(collapsed = TRUE),
-            overlayGroups = 'Stationen')
+            overlayGroups = c('Stationen', 'Marker'))
   })
 
   output$plot <- renderDygraph({
