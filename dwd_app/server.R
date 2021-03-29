@@ -38,7 +38,7 @@ server <- function(input, output) {
   my_place <- reactive({
 
     if(!is.numeric(data_of_click$clickedMarker$lat)) {
-      my_place <- "Dresden (Mitte)"
+      my_place <- "Dresden-Klotzsche"
       } else {
         my_place <- dwd_stations$Stationsname[dwd_stations$geoLaenge==data_of_click$clickedMarker$lng&
                                                      dwd_stations$geoBreite==data_of_click$clickedMarker$lat]
@@ -107,7 +107,7 @@ server <- function(input, output) {
   # Leaflet map with 2 markers
   output$map <- renderLeaflet({
           leaflet() %>%
-          setView(lat = 50.71158, lng = 12.99802, zoom = 10) %>%
+          setView(lat = 51.05, lng = 13.75, zoom = 10) %>%
           addProviderTiles("OpenStreetMap.HOT", layerId = 1,group = 'Landscape',
                            options = providerTileOptions(noWrap = TRUE)) %>%
           addProviderTiles("OpenTopoMap", layerId = 1, group ='Topography',
