@@ -38,7 +38,7 @@ server <- function(input, output) {
   my_place <- reactive({
 
     if(!is.numeric(data_of_click$clickedMarker$lat)) {
-      my_place <- "Dresden-Klotzsche"
+      my_place <- "Dresden (Mitte)"
       } else {
         my_place <- dwd_stations$Stationsname[dwd_stations$geoLaenge==data_of_click$clickedMarker$lng&
                                                      dwd_stations$geoBreite==data_of_click$clickedMarker$lat]
@@ -67,6 +67,35 @@ server <- function(input, output) {
   return(tag_plt$Parameter[input$plotvar==tag_plt$Parameterbeschreibung])
   })
 
+  # check quality of the data
+  chk_qual <- reactive({
+    
+    # get the averaged years
+    if (input$monthly == FALSE) {
+      dat <- an_mean(dat_calc())
+    } else {
+      dat <- mon_mean(dat_calc())
+      dat$data <- subset(dat$data, dat$data$month == as.numeric(input$month))
+    }
+    
+    # a continuous vector with all years
+    max_yrs <- seq(min(dat$data$year), max(dat$data$year), by = 1)
+    
+    # for how many years is data available
+    av <- round(sum(dat$data$year %in% max_yrs)/length(max_yrs) ,2)* 100
+    
+    # longest sequence of years where data is available
+    lngths <- sapply(split(diff(dat$data$year),
+          cumsum(seq_along(diff(dat$data$year)) %in% (which(diff(dat$data$year)!=1)+1)),
+          drop = TRUE),
+          length)
+    # is there at least 30 years of undisturbed data 
+    min30y <- sum(dat$data$year %in% max_yrs) > 30 & any(lngths > 30)
+    
+      return(list(av = av,
+                  min30y = min30y,
+                  zeitr = paste0(min(dat$data$year)," - " ,max(dat$data$year))))
+  })
   # available variables
   av_var <- reactive({
     tag_plt <- unique(get_dat()$meta_per[,c('Parameter','Parameterbeschreibung')])
@@ -200,6 +229,15 @@ server <- function(input, output) {
     selectInput(inputId = "plotvar", #name of input
                 label = "Welche Variable plotten?", #label displayed in ui
                 choices = av_var())
+  })
+  
+  # Quality of the data
+  output$qual <- renderUI({
+    p(paste0("Für ", chk_qual()$av, "% des gesammten Zeitraumes (",
+             chk_qual()$zeitr,") sind ausreichend Daten vorhanden.",
+             ifelse(chk_qual()$min30y, " Mindestens 30 Jahre Daten am Stück vorhanden.",
+                    paste0(" Keine 30 Jahre Daten am Stück vorhanden.",
+                           " Aussagen über Klimatrends sind nicht möglich!"))))
   })
 }
 

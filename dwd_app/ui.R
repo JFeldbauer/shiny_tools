@@ -9,6 +9,8 @@ ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(
       htmlOutput("station"),
+      h2("Verfügbare Daten"),
+      htmlOutput("qual"),
       h2('Weitere Einstellungen:'),
       conditionalPanel(condition="input.tabselected!=4",htmlOutput("plot_seclect")),
       conditionalPanel(condition="input.tabselected==3",
