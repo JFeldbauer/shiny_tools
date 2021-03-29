@@ -142,7 +142,10 @@ server <- function(input, output) {
         xlab("Jahr")
     }
     if(input$lm) {
-      pl <- pl + geom_smooth(aes(x = t, y = var), method = "lm")
+      pl <- pl + geom_smooth(aes(x = t, y = var, col = "Lineare Regression"), method = "lm")
+    }
+    if(input$loess) {
+      pl <- pl + geom_smooth(aes(x = t, y = var, col = "loess Filter"), method = "loess")
     }
     ggplotly(p = pl)
   })
