@@ -9,6 +9,9 @@ ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(
       htmlOutput("station"),
+      htmlOutput("meta_stat"),
+      h2("Zeitraum"),
+      htmlOutput("timespn"),
       h2("Verfügbare Daten"),
       htmlOutput("qual"),
       h2('Weitere Einstellungen:'),

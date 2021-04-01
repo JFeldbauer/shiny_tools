@@ -16,8 +16,8 @@ get_DWD_stat_info <- function(){
                                sapply(stations$Stations_id,
                                       function(s) paste0(paste0(rep("0", 6 - ceiling(log10(s + 0.5))),
                                                                 collapse = ""), s)), perl = TRUE)
-  # historical data only goes up to the end of 2019
-  stations$bis_datum[stations$bis_datum > ymd(20191231)] <- ymd(20191231)
+  # historical data only goes up to the end of 2020
+  stations$bis_datum[stations$bis_datum > ymd(20201231)] <- ymd(20201231)
 
   return(stations)
 }

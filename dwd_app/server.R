@@ -56,8 +56,11 @@ server <- function(input, output) {
 
   # data frame for calculations
   dat_calc <- reactive({
-    data.frame(t = get_dat()$data$MESS_DATUM,
-               var = get_dat()$data[, plt_var()])})
+    dat <- get_dat()
+    dat$data <- dat$data[year(dat$data$MESS_DATUM) >= input$time_ana[1] &
+                           year(dat$data$MESS_DATUM) <= input$time_ana[2], ]
+    data.frame(t = dat$data$MESS_DATUM,
+               var = dat$data[, plt_var()])})
 
   # variable which to use
   plt_var <- reactive({
@@ -120,29 +123,30 @@ server <- function(input, output) {
                  options=markerOptions(riseOnHover=TRUE),
                  group='Marker')  %>%
 
-      addCircles(lat = dwd_stations$geoBreite,
-                 lng = dwd_stations$geoLaenge,
-                 popup = paste(dwd_stations$Stationsname,
-                               "</br>ID:",
-                               dwd_stations$Stations_id,
-                               "\n </br>Höhe:",
-                               dwd_stations$Stationshoehe, "m über NHN",
-                               "\n </br>Daten von:",
-                               dwd_stations$von_datum,
-                               "\n </br>bis:",
-                               dwd_stations$bis_datum),
-                 layerId = 2, weight = 7,color='red',
-                 opacity = 0.7, group='Stationen')  %>%
+      # addCircles(lat = dwd_stations$geoBreite,
+      #            lng = dwd_stations$geoLaenge,
+      #            popup = paste(dwd_stations$Stationsname,
+      #                          "</br>ID:",
+      #                          dwd_stations$Stations_id,
+      #                          "\n </br>Höhe:",
+      #                          dwd_stations$Stationshoehe, "m über NHN",
+      #                          "\n </br>Daten von:",
+      #                          dwd_stations$von_datum,
+      #                          "\n </br>bis:",
+      #                          dwd_stations$bis_datum),
+      #            layerId = 2, weight = 7,color='red',
+      #            opacity = 0.7, group='Stationen')  %>%
 
           addLayersControl(
             baseGroups = c('Landscape','Topography'),position = 'bottomright',
             options = layersControlOptions(collapsed = TRUE),
-            overlayGroups = c('Stationen', 'Marker'))
+            #overlayGroups = c('Stationen', 'Marker'))
+            overlayGroups = c('Stationen'))
   })
 
   output$plot <- renderDygraph({
 
-    tsx <- xts(get_dat()$data[, plt_var()], get_dat()$data$MESS_DATUM)
+    tsx <- xts(dat_calc()$var, dat_calc()$t)
     dygraph(tsx, xlab = 'Datum', main = my_place(),
             ylab = input$plotvar) %>%
       dySeries("V1", label = input$plotvar) %>%
@@ -237,7 +241,24 @@ server <- function(input, output) {
              chk_qual()$zeitr,") sind ausreichend Daten vorhanden.",
              ifelse(chk_qual()$min30y, " Mindestens 30 Jahre Daten am Stück vorhanden.",
                     paste0(" Keine 30 Jahre Daten am Stück vorhanden.",
-                           " Aussagen über Klimatrends sind nicht möglich!"))))
+                           " Aussagen über Klimatrends sind nicht möglich."))))
+  })
+  
+  # Zeitraum zum analysieren
+  output$timespn <- renderUI({
+    meta <- dwd_stations[dwd_stations$Stationsname == my_place(), ]
+    sliderInput("time_ana", "Zeitraum wählen", year(meta$von_datum),
+                year(meta$bis_datum), step = 1,
+                value = c(year(meta$von_datum), year(meta$bis_datum)), sep = "")
+  })
+  
+  # Station meta informations
+  output$meta_stat <- renderUI({
+    id <- dwd_stations$Stationsname == my_place()
+    p(strong("ID:"), dwd_stations$Stations_id[id],
+      "\n", strong("Höhe:"), dwd_stations$Stationshoehe[id], "m über NHN",
+      "\n",strong("Daten von:"), dwd_stations$von_datum[id],
+      "\n",strong("bis:"), dwd_stations$bis_datum[id])
   })
 }
 
