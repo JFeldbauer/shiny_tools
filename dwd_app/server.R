@@ -117,8 +117,11 @@ server <- function(input, output) {
                            options = providerTileOptions(noWrap = TRUE))%>%
       addMarkers(lat = dwd_stations$geoBreite,
                  lng = dwd_stations$geoLaenge,
-                 label = dwd_stations$Stationsname,
+                 #label = dwd_stations$Stationsname,
                  layerId = 3,
+                 label = lapply(paste(dwd_stations$Stationsname,
+                               "</br>Daten von:", dwd_stations$von_datum,
+                               "</br>bis:", dwd_stations$bis_datum), HTML),
                  labelOptions(layerId=6, noHide = FALSE, direction = 'auto'),
                  options=markerOptions(riseOnHover=TRUE),
                  group='Marker')  %>%
@@ -238,7 +241,7 @@ server <- function(input, output) {
   # Quality of the data
   output$qual <- renderUI({
     p(paste0("Für ", chk_qual()$av, "% des gesammten Zeitraumes (",
-             chk_qual()$zeitr,") sind ausreichend Daten vorhanden.",
+             chk_qual()$zeitr,") sind ausreichend Daten vorhanden.\n",
              ifelse(chk_qual()$min30y, " Mindestens 30 Jahre Daten am Stück vorhanden.",
                     paste0(" Keine 30 Jahre Daten am Stück vorhanden.",
                            " Aussagen über Klimatrends sind nicht möglich."))))
@@ -255,10 +258,12 @@ server <- function(input, output) {
   # Station meta informations
   output$meta_stat <- renderUI({
     id <- dwd_stations$Stationsname == my_place()
-    p(strong("ID:"), dwd_stations$Stations_id[id],
-      "\n", strong("Höhe:"), dwd_stations$Stationshoehe[id], "m über NHN",
-      "\n",strong("Daten von:"), dwd_stations$von_datum[id],
-      "\n",strong("bis:"), dwd_stations$bis_datum[id])
+    p1 <- paste(strong("ID:"), dwd_stations$Stations_id[id])
+    p2 <- paste(strong("Höhe:"), dwd_stations$Stationshoehe[id], "m über NHN")
+    p3 <- paste(strong("Daten von:"), dwd_stations$von_datum[id])
+    p4 <- paste(strong("bis:"), dwd_stations$bis_datum[id])
+    
+    HTML(paste(p1, p2, p3, p4, sep = '<br/>'))
   })
 }
 
