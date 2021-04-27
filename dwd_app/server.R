@@ -108,7 +108,7 @@ server <- function(input, output) {
   # check if time span of selection is ok
   check_timespn <- reactive({
     # check empty argument, then time span is full
-    if (is.null(input$ime_ana)) return(TRUE)
+    if (is.null(input$time_ana)) return(TRUE)
 
     meta <- dwd_stations[dwd_stations$Stationsname == my_place(), ]
 
