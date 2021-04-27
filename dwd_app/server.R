@@ -1,4 +1,4 @@
-# libraries
+# packages
 library(shiny)
 library(leaflet)
 library(dygraphs)
@@ -64,44 +64,49 @@ server <- function(input, output) {
 
   # variable which to use
   plt_var <- reactive({
-  tag_plt <- unique(get_dat()$meta_per[,c('Parameter','Parameterbeschreibung')])
-  tag_plt <- tag_plt[tag_plt$Parameter %in% c("RSK", "SHK_TAG", "TMK", "TXK",
+    tag_plt <- unique(get_dat()$meta_per[,c('Parameter','Parameterbeschreibung')])
+    tag_plt <- tag_plt[tag_plt$Parameter %in% c("RSK", "SHK_TAG", "TMK", "TXK",
                                               "TNK"), ]
-  return(tag_plt$Parameter[input$plotvar==tag_plt$Parameterbeschreibung])
+    return(tag_plt$Parameter[input$plotvar==tag_plt$Parameterbeschreibung])
   })
 
   # check quality of the data
   chk_qual <- reactive({
-    
     # get the averaged years
+    dc <- dat_calc()
+    # emergency exit during installation (no data yet)
+    if (nrow(dc) < 2) {
+      return(list(av = 0, min30y = 0, zeitr = "empty"))
+    }
+
     if (input$monthly == FALSE) {
-      dat <- an_mean(dat_calc())
+      dat <- an_mean(dc)
     } else {
-      dat <- mon_mean(dat_calc())
+      dat <- mon_mean(dc)
       dat$data <- subset(dat$data, dat$data$month == as.numeric(input$month))
     }
-    
+
     # a continuous vector with all years
     max_yrs <- seq(min(dat$data$year), max(dat$data$year), by = 1)
-    
+
     # for how many years is data available
-    av <- round(sum(dat$data$year %in% max_yrs)/length(max_yrs) ,2)* 100
-    
+    av <- round(sum(dat$data$year %in% max_yrs)/length(max_yrs), 2) * 100
+
     # longest sequence of years where data is available
     lngths <- sapply(split(diff(dat$data$year),
           cumsum(seq_along(diff(dat$data$year)) %in% (which(diff(dat$data$year)!=1)+1)),
           drop = TRUE),
           length)
-    # is there at least 30 years of undisturbed data 
+    # is there at least 30 years of undisturbed data
     min30y <- sum(dat$data$year %in% max_yrs) > 30 & any(lngths > 30)
-    
-      return(list(av = av,
-                  min30y = min30y,
-                  zeitr = paste0(min(dat$data$year)," - " ,max(dat$data$year))))
+
+    return(list(av = av,
+                min30y = min30y,
+                zeitr = paste0(min(dat$data$year), " - " , max(dat$data$year))))
   })
   # available variables
   av_var <- reactive({
-    tag_plt <- unique(get_dat()$meta_per[,c('Parameter','Parameterbeschreibung')])
+    tag_plt <- unique(get_dat()$meta_per[,c('Parameter', 'Parameterbeschreibung')])
     tag_plt <- tag_plt[tag_plt$Parameter %in% c("RSK", "SHK_TAG", "TMK", "TXK",
                                                 "TNK"), ]
     return(tag_plt$Parameterbeschreibung)
@@ -111,7 +116,7 @@ server <- function(input, output) {
   output$map <- renderLeaflet({
           leaflet() %>%
           setView(lat = 51.05, lng = 13.75, zoom = 10) %>%
-          addProviderTiles("OpenStreetMap.HOT", layerId = 1,group = 'Landscape',
+          addProviderTiles("OpenStreetMap.HOT", layerId = 1, group = 'Landscape',
                            options = providerTileOptions(noWrap = TRUE)) %>%
           addProviderTiles("OpenTopoMap", layerId = 1, group ='Topography',
                            options = providerTileOptions(noWrap = TRUE))%>%
@@ -141,20 +146,21 @@ server <- function(input, output) {
       #            opacity = 0.7, group='Stationen')  %>%
 
           addLayersControl(
-            baseGroups = c('Landscape','Topography'),position = 'bottomright',
+            baseGroups = c('Landscape', 'Topography'), position = 'bottomright',
             options = layersControlOptions(collapsed = TRUE),
             #overlayGroups = c('Stationen', 'Marker'))
             overlayGroups = c('Stationen'))
   })
 
   output$plot <- renderDygraph({
-
     tsx <- xts(dat_calc()$var, dat_calc()$t)
-    dygraph(tsx, xlab = 'Datum', main = my_place(),
-            ylab = input$plotvar) %>%
-      dySeries("V1", label = input$plotvar) %>%
-      dyLegend(show = "always", hideOnMouseOut = FALSE)
-
+    # avoid error message during initialization if tsx is still empty
+    if (!is.null(nrow(tsx))) {
+      dygraph(tsx, xlab = 'Datum', main = my_place(),
+              ylab = input$plotvar) %>%
+        dySeries("V1", label = input$plotvar) %>%
+        dyLegend(show = "always", hideOnMouseOut = FALSE)
+    }
   })
 
   # plot warming stripes
@@ -181,7 +187,7 @@ server <- function(input, output) {
       pl <- pl + geom_smooth(aes(x = t, y = var, col = "Lineare Regression"), method = "lm")
     }
     if(input$loess) {
-      pl <- pl + geom_smooth(aes(x = t, y = var, col = "loess Filter"), method = "loess")
+      pl <- pl + geom_smooth(aes(x = t, y = var, col = "Loess Filter"), method = "loess")
     }
     ggplotly(p = pl)
   })
@@ -237,7 +243,7 @@ server <- function(input, output) {
                 label = "Welche Variable plotten?", #label displayed in ui
                 choices = av_var())
   })
-  
+
   # Quality of the data
   output$qual <- renderUI({
     p(paste0("Für ", chk_qual()$av, "% des gesammten Zeitraumes (",
@@ -246,7 +252,7 @@ server <- function(input, output) {
                     paste0(" Keine 30 Jahre Daten am Stück vorhanden.",
                            " Aussagen über Klimatrends sind nicht möglich."))))
   })
-  
+
   # Zeitraum zum analysieren
   output$timespn <- renderUI({
     meta <- dwd_stations[dwd_stations$Stationsname == my_place(), ]
@@ -254,7 +260,7 @@ server <- function(input, output) {
                 year(meta$bis_datum), step = 1,
                 value = c(year(meta$von_datum), year(meta$bis_datum)), sep = "")
   })
-  
+
   # Station meta informations
   output$meta_stat <- renderUI({
     id <- dwd_stations$Stationsname == my_place()
@@ -262,7 +268,7 @@ server <- function(input, output) {
     p2 <- paste(strong("Höhe:"), dwd_stations$Stationshoehe[id], "m über NHN")
     p3 <- paste(strong("Daten von:"), dwd_stations$von_datum[id])
     p4 <- paste(strong("bis:"), dwd_stations$bis_datum[id])
-    
+
     HTML(paste(p1, p2, p3, p4, sep = '<br/>'))
   })
 }
