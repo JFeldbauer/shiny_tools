@@ -3,11 +3,13 @@ get_DWD_stat_info <- function(){
   url_stations <- paste0("https://opendata.dwd.de/climate_environment/",
                          "CDC/observations_germany/climate/daily/kl/historical/",
                          "KL_Tageswerte_Beschreibung_Stationen.txt")
-  widths <- nchar(read.table(url_stations, header = FALSE, nrows = 1, skip = 1))
+  widths <- nchar(read.table(url_stations, header = FALSE, nrows = 1, skip = 1,
+                             stringsAsFactors = FALSE))
   widths <- widths + c(-5, -1, 0, 5, 0 , 2, 0, 14)
   stations <- read.fwf(url_stations, header = FALSE, skip = 2, widths = widths,
-                       fileEncoding = "iso-8859-1")
-  colnames(stations) <- read.table(url_stations, header = FALSE, nrows = 1)
+                       fileEncoding = "iso-8859-1", stringsAsFactors = FALSE)
+  colnames(stations) <- read.table(url_stations, header = FALSE, nrows = 1,
+                                   stringsAsFactors = FALSE)
   stations$von_datum <- ymd(stations$von_datum)
   stations$bis_datum <- ymd(stations$bis_datum)
   stations$Stationsname <- gsub("\\s*$", "", stations$Stationsname, perl = TRUE)
@@ -40,7 +42,8 @@ get_DWD_data_hist <- function(stat_meta) {
                                          format(stat_meta$von_datum, "%Y%m%d"), "_",
                                          format(stat_meta$bis_datum, "%Y%m%d"),
                                          "_", stat_meta$Stations_id, ".txt")),
-                        sep = ";", header = TRUE, fileEncoding = "iso-8859-1", na.strings = -999)
+                        sep = ";", header = TRUE, fileEncoding = "iso-8859-1",
+                        na.strings = -999, stringsAsFactors = FALSE)
   # change format of date
   dat_met$MESS_DATUM <- ymd(dat_met$MESS_DATUM)
 
@@ -49,7 +52,7 @@ get_DWD_data_hist <- function(stat_meta) {
 
   meta_dat <- read.table(unz(temp, meta_name), sep = ";", header = TRUE,
                          nrow = length(readLines(unz(temp, meta_name))) - 3,
-                         fileEncoding = "iso-8859-1")
+                         fileEncoding = "iso-8859-1", stringsAsFactors = FALSE)
   # change format of date
   meta_dat$Von_Datum <- ymd(meta_dat$Von_Datum)
   meta_dat$Bis_Datum <- ymd(meta_dat$Bis_Datum)
@@ -58,7 +61,7 @@ get_DWD_data_hist <- function(stat_meta) {
   geo_name <- paste0("Metadaten_Geographie_", stat_meta$Stations_id, ".txt")
 
   geo_meta <- read.table(unz(temp, geo_name), sep = ";", header = TRUE,
-                         fileEncoding = "iso-8859-1")
+                         fileEncoding = "iso-8859-1", stringsAsFactors = FALSE)
   # change format of date
   geo_meta$von_datum <- ymd(geo_meta$von_datum)
   geo_meta$bis_datum <- ymd(geo_meta$bis_datum)
