@@ -104,6 +104,18 @@ server <- function(input, output) {
                 min30y = min30y,
                 zeitr = paste0(min(dat$data$year), " - " , max(dat$data$year))))
   })
+  
+  # check if time span of selection is ok
+  check_timespn <- reactive({
+    meta <- dwd_stations[dwd_stations$Stationsname == my_place(), ]
+    if (all(input$time_ana == c(year(meta$von_datum),
+                                      year(meta$bis_datum)))) {
+      TRUE
+    } else {
+      FALSE
+    }
+  })
+  
   # available variables
   av_var <- reactive({
     tag_plt <- unique(get_dat()$meta_per[,c('Parameter', 'Parameterbeschreibung')])
@@ -153,14 +165,16 @@ server <- function(input, output) {
   })
 
   output$plot <- renderDygraph({
-    tsx <- xts(dat_calc()$var, dat_calc()$t)
-    # avoid error message during initialization if tsx is still empty
-    if (!is.null(nrow(tsx))) {
-      dygraph(tsx, xlab = 'Datum', main = my_place(),
-              ylab = input$plotvar) %>%
-        dySeries("V1", label = input$plotvar) %>%
-        dyLegend(show = "always", hideOnMouseOut = FALSE)
-    }
+    if(check_timespn()) {
+      tsx <- xts(dat_calc()$var, dat_calc()$t)
+      # avoid error message during initialization if tsx is still empty
+      if (!is.null(nrow(tsx))) {
+        dygraph(tsx, xlab = 'Datum', main = my_place(),
+                ylab = input$plotvar) %>%
+          dySeries("V1", label = input$plotvar) %>%
+          dyLegend(show = "always", hideOnMouseOut = FALSE)
+      }
+    } else {}
   })
 
   # plot warming stripes
@@ -260,7 +274,7 @@ server <- function(input, output) {
                 year(meta$bis_datum), step = 1,
                 value = c(year(meta$von_datum), year(meta$bis_datum)), sep = "")
   })
-
+outputOptions(output, "timespn", priority = 10)
   # Station meta informations
   output$meta_stat <- renderUI({
     id <- dwd_stations$Stationsname == my_place()

@@ -53,6 +53,7 @@ get_DWD_data_hist <- function(stat_meta) {
   meta_dat <- read.table(unz(temp, meta_name), sep = ";", header = TRUE,
                          nrow = length(readLines(unz(temp, meta_name))) - 3,
                          fileEncoding = "iso-8859-1", stringsAsFactors = FALSE)
+  meta_dat$Parameterbeschreibung <- gsub("\xf6", "oe", meta_dat$Parameterbeschreibung)
   # change format of date
   meta_dat$Von_Datum <- ymd(meta_dat$Von_Datum)
   meta_dat$Bis_Datum <- ymd(meta_dat$Bis_Datum)
