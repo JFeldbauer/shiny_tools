@@ -104,18 +104,21 @@ server <- function(input, output) {
                 min30y = min30y,
                 zeitr = paste0(min(dat$data$year), " - " , max(dat$data$year))))
   })
-  
+
   # check if time span of selection is ok
   check_timespn <- reactive({
+    # check empty argument, then time span is full
+    if (is.null(input$ime_ana)) return(TRUE)
+
     meta <- dwd_stations[dwd_stations$Stationsname == my_place(), ]
-    if (input$time_ana[1] >= year(meta$von_datum) &
-        input$time_ana[2] <= year(meta$bis_datum)) {
-      TRUE
-    } else {
-      FALSE
-    }
+
+    # no if needed, comparison is boolean anyway
+    return(
+      input$time_ana[1] >= year(meta$von_datum) &
+      input$time_ana[2] <= year(meta$bis_datum)
+    )
   })
-  
+
   # available variables
   av_var <- reactive({
     tag_plt <- unique(get_dat()$meta_per[,c('Parameter', 'Parameterbeschreibung')])
