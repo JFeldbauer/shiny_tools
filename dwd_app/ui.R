@@ -5,7 +5,7 @@ library(plotly)
 ui <- fluidPage(
   HTML('<span lang = "de">'), # worakround; improve this when shiny supports global lang tag
   includeHTML("www/header_ihb_en.html"),
-  titlePanel("DWD Wetterstationen"),
+  titlePanel("DWD-Trends"),
   sidebarLayout(
     sidebarPanel(
       htmlOutput("station"),
@@ -20,8 +20,8 @@ ui <- fluidPage(
                        checkboxInput("cumsum", "Kummulative Jahrestageswerte", FALSE)),
       conditionalPanel(condition="input.tabselected==3", htmlOutput("sel_year")),
       conditionalPanel(condition="input.tabselected==2",
-                       checkboxInput("lm", "Lineare Regression fitten", FALSE),
-                       checkboxInput("loess", "loess Filter fitten", FALSE)),
+                       checkboxInput("lm", "Linearer Trend fitten", FALSE),
+                       checkboxInput("loess", "Gleitendes Mittel (Loess-Filter) fitten", FALSE)),
       conditionalPanel(condition="input.tabselected==2",
                        checkboxInput("monthly", "Monatliche Mittelwerte", FALSE)),
       conditionalPanel(condition="input.monthly==true && input.tabselected==2",
@@ -45,7 +45,7 @@ ui <- fluidPage(
         tabPanel("Karte und Rohwerte", value = 1,
                  leafletOutput("map", height="600px"),
                  dygraphOutput("plot", height="300px")),
-        tabPanel("Mittelwerte", value = 2,
+        tabPanel("Trends", value = 2,
                  plotlyOutput("mean_year"),
                  conditionalPanel("input.lm==true", tableOutput("sumTable"))),
         tabPanel("Jahre vergleichen", value = 3,

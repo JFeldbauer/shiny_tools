@@ -108,8 +108,8 @@ server <- function(input, output) {
   # check if time span of selection is ok
   check_timespn <- reactive({
     meta <- dwd_stations[dwd_stations$Stationsname == my_place(), ]
-    if (all(input$time_ana == c(year(meta$von_datum),
-                                      year(meta$bis_datum)))) {
+    if (input$time_ana[1] >= year(meta$von_datum) &
+        input$time_ana[2] <= year(meta$bis_datum)) {
       TRUE
     } else {
       FALSE
@@ -198,10 +198,10 @@ server <- function(input, output) {
         xlab("Jahr")
     }
     if(input$lm) {
-      pl <- pl + geom_smooth(aes(x = t, y = var, col = "Lineare Regression"), method = "lm")
+      pl <- pl + geom_smooth(aes(x = t, y = var, col = "Linearer Trend"), method = "lm")
     }
     if(input$loess) {
-      pl <- pl + geom_smooth(aes(x = t, y = var, col = "Loess Filter"), method = "loess")
+      pl <- pl + geom_smooth(aes(x = t, y = var, col = "Gleitendes Mittel (Loess-Filter)"), method = "loess")
     }
     ggplotly(p = pl)
   })
@@ -219,12 +219,12 @@ server <- function(input, output) {
     lm <- lm(var ~ t, DF)
 
     setNames(data.frame(c("Linearer Trend", "Mann Kendall Test"),
-                        c("Slope", "Tau"),
+                        c("Steigung", "Tau"),
                         c(lm$coefficients[2] * 365.25,
                           ken$tau[1]),
                         c(summary(lm)$coefficients[2, 2] * 365.25, NA),
                         c(summary(lm)$coefficients[2, 4], ken$sl[1])),
-             c("Method", "Measure","Value", "Std. err", "p-value"))
+             c("Methode", "Parameter","Wert", "Standardfehler", "p-Wert"))
   })
   # summary table of the linear fit
   output$sumTable <- renderTable({
